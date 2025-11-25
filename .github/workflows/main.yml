@@ -1,0 +1,42 @@
+# .github/workflows/main.yml
+name: Telegram Config Collector
+
+# Запуск по расписанию (каждые 6 часов) и вручную
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Запуск каждые 6 часов
+  workflow_dispatch: # Позволяет запускать вручную через вкладку Actions
+
+jobs:
+  collect_and_update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+          
+      - name: Run Telegram Parser Script
+        # Передаем секреты GitHub Actions в скрипт как переменные окружения
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: python telegram_parser.py
+        
+      - name: Commit and Push changes
+        # Это действие автоматически коммитит измененный файл farah_vpn_configs.txt
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: farah_vpn_configs.txt
+          commit_message: "Автообновление конфигов Farah VPN"
+          # ВАЖНО: Мы используем встроенный токен GITHUB_TOKEN.
+          # Не используйте здесь ваш REPO_TOKEN, если вы уже дали встроенному токену права.
+          # Настройка 'token' по умолчанию использует ${{ github.token }}, который имеет права на коммит.
